@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Polkadot Reputation App</title>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+      color: white;
+      text-align: center;
+      padding-top: 80px;
+    }
+
+    h1 {
+      color: #e6007a;
+      font-size: 32px;
+      margin-bottom: 40px;
+    }
+
+    button {
+      padding: 12px 28px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 30px;
+      border: none;
+      background: #e6007a;
+      color: white;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #ff2fa0;
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+
+    .loader {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .spinner {
+      border: 4px solid #333;
+      border-top: 4px solid #e6007a;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      margin: 20px auto;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .result-container {
+      margin-top: 40px;
+      padding: 25px;
+      background: #1f1f1f;
+      border-radius: 15px;
+      width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      display: none;
+      box-shadow: 0 0 20px rgba(230, 0, 122, 0.4);
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tier {
+      font-size: 20px;
+      margin-top: 15px;
+      font-weight: bold;
+      color: #e6007a;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🟣 Polkadot Reputation</h1>
+
+  <button id="connectBtn">Connect Wallet</button>
+
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p>Connecting to blockchain...</p>
+  </div>
+
+  <div class="result-container" id="resultBox">
+    <p><strong>Address:</strong> <span id="address"></span></p>
+    <p><strong>Balance:</strong> <span id="balance"></span></p>
+    <p><strong>Transactions:</strong> <span id="txCount"></span></p>
+    <p><strong>Score:</strong> <span id="score"></span></p>
+    <div class="tier">Tier: <span id="tier"></span></div>
+  </div>
+
+  <script type="module">
+    import { web3Enable, web3Accounts } 
+    from "https://cdn.jsdelivr.net/npm/@polkadot/extension-dapp/+esm";
+
+    import { ApiPromise, WsProvider } 
+    from "https://cdn.jsdelivr.net/npm/@polkadot/api/+esm";
+
+    const connectBtn = document.getElementById("connectBtn");
+    const loader = document.getElementById("loader");
+    const resultBox = document.getElementById("resultBox");
+
+    connectBtn.addEventListener("click", async () => {
+
+      try {
+
+        // Show loader
+        loader.style.display = "block";
+        connectBtn.disabled = true;
+        connectBtn.innerText = "Connecting...";
+
+        const extensions = await web3Enable("Reputation App");
+
+        if (extensions.length === 0) {
+          alert("Polkadot extension not found!");
+          resetButton();
+          return;
+        }
+
+        const accounts = await web3Accounts();
+
+        if (accounts.length === 0) {
+          alert("No accounts found!");
+          resetButton();
+          return;
+        }
+
+        const address = accounts[0].address;
+
+        const provider = new WsProvider("wss://westend-rpc.polkadot.io");
+        const api = await ApiPromise.create({ provider });
+
+        const { data, nonce } = await api.query.system.account(address);
+
+        const numericBalance = parseFloat(data.free.toString()) / 1e12;
+        const txCount = nonce.toNumber();
+
+        // Reputation Logic
+        let score = 10;
+
+        if (numericBalance > 10) score += 40;
+        else if (numericBalance > 1) score += 25;
+        else if (numericBalance > 0) score += 10;
+
+        if (txCount > 20) score += 40;
+        else if (txCount > 5) score += 25;
+        else if (txCount > 0) score += 10;
+
+        let tier = "Bronze 🟤";
+        if (score >= 80) tier = "Gold 🟡";
+        else if (score >= 50) tier = "Silver ⚪";
+
+        // Hide loader
+        loader.style.display = "none";
+
+        // Show result
+        document.getElementById("address").innerText = address;
+        document.getElementById("balance").innerText = numericBalance + " WND";
+        document.getElementById("txCount").innerText = txCount;
+        document.getElementById("score").innerText = score;
+        document.getElementById("tier").innerText = tier;
+
+        resultBox.style.display = "block";
+
+        connectBtn.innerText = "Connected ✅";
+
+      } catch (error) {
+        console.error(error);
+        alert("Something went wrong.");
+        resetButton();
+      }
+
+      function resetButton() {
+        loader.style.display = "none";
+        connectBtn.disabled = false;
+        connectBtn.innerText = "Connect Wallet";
+      }
+
+    });
+  </script>
+
+</body>
+</html>
