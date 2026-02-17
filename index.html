@@ -1,108 +1,252 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>Polkadot Reputation App</title>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Modern Font Import -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+
   <style>
+    /* Reset & Variables */
+    :root {
+      --polka-pink: #e6007a;
+      --polka-hover: #ff2fa0;
+      --dark-bg: #0b0c10;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-main: #ffffff;
+      --text-muted: #8892b0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
-      color: white;
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: var(--dark-bg);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(230, 0, 122, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(230, 0, 122, 0.1) 0%, transparent 40%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Main Content Wrapper */
+    .container {
+      width: 100%;
+      max-width: 480px;
       text-align: center;
-      padding-top: 80px;
+      position: relative;
+      z-index: 1;
     }
 
+    /* Header Styling */
     h1 {
-      color: #e6007a;
-      font-size: 32px;
+      font-size: 36px;
       margin-bottom: 40px;
+      letter-spacing: -1px;
+      text-shadow: 0 0 20px rgba(230, 0, 122, 0.3);
+    }
+    
+    h1 span {
+      color: var(--polka-pink);
     }
 
+    /* Button Styling */
     button {
-      padding: 12px 28px;
+      padding: 16px 32px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
       font-size: 16px;
       cursor: pointer;
-      border-radius: 30px;
-      border: none;
-      background: #e6007a;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, var(--polka-pink), #c00065);
       color: white;
-      transition: 0.3s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 10px 20px -5px rgba(230, 0, 122, 0.4);
+      width: 100%;
+      max-width: 250px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     button:hover {
-      background: #ff2fa0;
-      transform: scale(1.05);
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px -5px rgba(230, 0, 122, 0.6);
+      filter: brightness(1.1);
+    }
+
+    button:active {
+      transform: translateY(0);
     }
 
     button:disabled {
-      background: #555;
+      background: #2a2a2a;
+      color: #666;
+      box-shadow: none;
       cursor: not-allowed;
+      border-color: transparent;
     }
 
+    /* Loader Styling */
     .loader {
-      margin-top: 20px;
-      display: none;
+      margin-top: 30px;
+      display: none; /* Controlled by JS */
+    }
+
+    .loader p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 15px;
+      animation: pulse 1.5s infinite;
     }
 
     .spinner {
-      border: 4px solid #333;
-      border-top: 4px solid #e6007a;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid var(--polka-pink);
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      margin: 20px auto;
-      animation: spin 1s linear infinite;
+      width: 50px;
+      height: 50px;
+      margin: 0 auto;
+      animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     }
 
+    /* Result Card Styling (Glassmorphism) */
+    .result-container {
+      margin-top: 40px;
+      padding: 0; /* Reset padding for internal layout */
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      width: 100%;
+      display: none; /* Controlled by JS */
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      overflow: hidden;
+    }
+
+    /* Styling the data rows inside the result box */
+    .result-container p {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      margin: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 15px;
+      color: var(--text-muted);
+    }
+
+    .result-container p strong {
+      font-weight: 500;
+    }
+
+    .result-container p span {
+      color: white;
+      font-weight: 500;
+      font-family: 'Space Grotesk', monospace; /* Monospace for numbers/address */
+    }
+
+    /* Specific styling for the Address to prevent overflow */
+    #address {
+      display: inline-block;
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
+      color: var(--polka-pink) !important;
+    }
+
+    /* Tier Section Styling */
+    .tier {
+      padding: 30px 20px;
+      background: linear-gradient(180deg, rgba(230, 0, 122, 0.05), transparent);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+    }
+
+    .tier span {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-main);
+      text-shadow: 0 0 30px rgba(230, 0, 122, 0.4);
+      letter-spacing: 0;
+    }
+
+    /* Animations */
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
 
-    .result-container {
-      margin-top: 40px;
-      padding: 25px;
-      background: #1f1f1f;
-      border-radius: 15px;
-      width: 400px;
-      margin-left: auto;
-      margin-right: auto;
-      display: none;
-      box-shadow: 0 0 20px rgba(230, 0, 122, 0.4);
-      animation: fadeIn 0.5s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .tier {
-      font-size: 20px;
-      margin-top: 15px;
-      font-weight: bold;
-      color: #e6007a;
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 400px) {
+      h1 { font-size: 28px; }
+      .result-container p { padding: 12px 16px; font-size: 14px; }
+      #address { max-width: 120px; }
     }
   </style>
 </head>
 
 <body>
 
-  <h1>🟣 Polkadot Reputation</h1>
+  <div class="container">
+    <h1>Polkadot Reputation</h1>
 
-  <button id="connectBtn">Connect Wallet</button>
+    <button id="connectBtn">Connect Wallet</button>
 
-  <div class="loader" id="loader">
-    <div class="spinner"></div>
-    <p>Connecting to blockchain...</p>
-  </div>
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <p>Establishing secure connection...</p>
+    </div>
 
-  <div class="result-container" id="resultBox">
-    <p><strong>Address:</strong> <span id="address"></span></p>
-    <p><strong>Balance:</strong> <span id="balance"></span></p>
-    <p><strong>Transactions:</strong> <span id="txCount"></span></p>
-    <p><strong>Score:</strong> <span id="score"></span></p>
-    <div class="tier">Tier: <span id="tier"></span></div>
+    <!-- The JS logic inserts plain <p> tags here, so we used CSS to style those generic <p> tags as flex-rows -->
+    <div class="result-container" id="resultBox">
+      <p><strong>Address</strong> <span id="address"></span></p>
+      <p><strong>Balance</strong> <span id="balance"></span></p>
+      <p><strong>Transactions</strong> <span id="txCount"></span></p>
+      <p><strong>Reputation Score</strong> <span id="score"></span></p>
+      
+      <!-- Tier is a div class="tier" in original HTML, kept consistent -->
+      <div class="tier">
+        Current Tier
+        <span id="tier"></span>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -171,7 +315,7 @@
 
         // Show result
         document.getElementById("address").innerText = address;
-        document.getElementById("balance").innerText = numericBalance + " WND";
+        document.getElementById("balance").innerText = numericBalance.toFixed(2) + " WND"; // Added minor JS formatting for cleaner UI if possible, else remove toFixed
         document.getElementById("txCount").innerText = txCount;
         document.getElementById("score").innerText = score;
         document.getElementById("tier").innerText = tier;
